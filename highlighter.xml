@@ -1,4 +1,8 @@
 <searches>
+    <!--Valid FG and BG values: black, red, green, yellow, blue, magenta, cyan, white-->
+    <!--You can add "light-" to the beginning of FG colors to make them light-->
+    <!--Replace invalid XML chars with escaped values:-->
+    <!--    <=&lt;  >=&gt;  "=&quot;  '=&apos;  &=&amp;-->
     <search fg="red" bg="white">(t)es\1</search>
-    <search fg="light-magenta" bg="green">line.*</search>
+    <search fg="light-magenta" bg="green">This(?! line).*</search>
 </searches>
