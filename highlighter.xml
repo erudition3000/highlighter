@@ -1,0 +1,4 @@
+<searches>
+    <search fg="red" bg="white">(t)es\1</search>
+    <search fg="light-magenta" bg="green">line.*</search>
+</searches>
