@@ -16,16 +16,18 @@ class HighlightSearch():
     endTag = r'\e[0m'   #back to terminal default
     colorMap = {'black': '0', 'red':'1', 'green':'2', 'yellow':'3', 'blue':'4', 'magenta':'5', 'cyan':'6', 'white':'7'}
 
-    def __init__(self, searchPat, fg=None, bg=None):
+    def __init__(self, searchStr, fg=None, bg=None, ignoreCase=False):
+        self.searchStr = searchStr
         self.brightColor = self.defaultBrightness
         self.foreground = None
         self.background = None
+        self.ignoreCase = re.IGNORECASE if ignoreCase else 0
         
         try:
-            self.searchPat = re.compile(searchPat)
+            self.searchPat = re.compile(searchStr, self.ignoreCase)
             self.compileError = False
         except re.error, e:
-            sys.stderr.write('ERROR: Invalid regex "{0}"\n    {1}\n'.format(searchPat, e))
+            sys.stderr.write('ERROR: Invalid regex "{0}"\n    {1}\n'.format(searchStr, e))
             self.compileError = True
             
         if fg:
@@ -76,12 +78,13 @@ def parseCommandLine():
     
     parser = argparse.ArgumentParser(description='Highlight matching text from standard input')
     parser.add_argument('file', nargs='?', default=sys.stdin, type=argparse.FileType('r'), help='Use file instead of stdin for input')
-    parser.add_argument('-c', '--config',  action='append', help='Load configuration file to speify search terms')
+    parser.add_argument('-c', '--config',  action='append', help='Load configuration file to speify search terms. Ignore-case tag effects all searches defined in the file.')
     parser.add_argument('-s', '--search',  nargs='+', action='append', help='Define a regular expression to search for (and highlight) followed by optional forground and background colors.  Colors can be one of: black, red, green, yellow, blue, magenta, cyan, white')
+    parser.add_argument('-i', '--ignore-case', action='store_true', default=False, help='Makes all command-line searches case insensitive.  To make individual searches insensitive add "(?i)" to the beginning of the search.  This does not effect searches defined in a config file.')
     parser.add_argument('-m', '--match-only', action='store_true', default=False, help='Only output matching lines')
     
     args = parser.parse_args()
-    #print 'args ={0}\n\n'.format(args)
+    print 'args ={0}\n\n'.format(args)
 
     if args.config:
         for configFile in args.config:
@@ -91,11 +94,12 @@ def parseCommandLine():
             searches.extend(configSearches)
             
     if not parseError and args.search:
+        args.match_only
         for searchArg in args.search:
             searchPat = searchArg[0]
             fg = searchPat[1] if len(searchArg)>1 else None
             bg = searchPat[2] if len(searchArg)>2 else None
-            hls = HighlightSearch(searchPat, fg, bg)
+            hls = HighlightSearch(searchPat, fg, bg, args.ignore_case)
             if not hls.compileError:
                 searches.append(hls)
             else:
@@ -113,10 +117,15 @@ def parseCommandLine():
 def parseConfigurationFile(configFile):
     searches = []
     parseError = False
+    ignoreCase = False
     
     try:
         dom = ET.parse(open(configFile, 'r'))
         root = dom.getroot()
+        ignoreCaseTags = root.findall('ignore-case')
+        if len(ignoreCaseTags) >= 1:
+            ignoreCase = ignoreCaseTags[-1].attrib['value']
+        
         for searchTag in root.findall('search'):
             (fg,bg) = (None, None)
             searchPat = searchTag.text
@@ -125,7 +134,7 @@ def parseConfigurationFile(configFile):
             if searchTag.attrib.has_key('bg'):
                 bg = searchTag.attrib['bg']
             
-            hls = HighlightSearch(searchPat, fg, bg)
+            hls = HighlightSearch(searchPat, fg, bg, ignoreCase)
             if not hls.compileError:
                 searches.append(hls)
             else:
