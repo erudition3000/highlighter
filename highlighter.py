@@ -163,8 +163,8 @@ def main():
         parser.print_usage()
         
     else:
-        for line in args.file:
-        
+        line = args.file.readline()
+        while line != '':
             foundMatch = False
             for search in searches:
                 (lineMatch,line) = search.search(line)
@@ -173,7 +173,7 @@ def main():
             if not args.match_only or foundMatch:
                 sys.stdout.write(line)
                 
-            
+            line = args.file.readline()
 
 
 if __name__ == '__main__':
